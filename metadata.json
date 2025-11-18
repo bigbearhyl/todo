@@ -1,0 +1,5 @@
+{
+  "name": "SmartPlan Todo",
+  "description": "一个现代、美观的任务管理应用，支持设置开始/结束日期，每日打卡任务，以及 AI 辅助拆解任务。",
+  "requestFramePermissions": []
+}
