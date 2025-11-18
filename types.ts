@@ -28,3 +28,9 @@ export interface CreateTaskPayload {
   startDate: string;
   endDate: string;
 }
+
+export interface AISettings {
+  apiKey: string;
+  baseUrl: string;
+  modelName: string;
+}

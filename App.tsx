@@ -4,12 +4,13 @@ import { TaskCard } from './components/TaskCard';
 import { NewTaskModal } from './components/NewTaskModal';
 import { Button } from './components/Button';
 import { CalendarView } from './components/CalendarView';
-import { Layout, Plus, CheckSquare, BarChart2, Filter, Calendar as CalendarIcon } from 'lucide-react';
+import { SettingsView } from './components/SettingsView';
+import { Layout, Plus, CheckSquare, BarChart2, Filter, Calendar as CalendarIcon, Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED'>('ACTIVE');
-  const [view, setView] = useState<'LIST' | 'CALENDAR'>('LIST');
+  const [view, setView] = useState<'LIST' | 'CALENDAR' | 'SETTINGS'>('LIST');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load from local storage on mount
@@ -63,11 +64,64 @@ const App: React.FC = () => {
   const activeCount = tasks.filter(t => t.status === TaskStatus.ACTIVE).length;
   const completedCount = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
 
+  const renderContent = () => {
+    if (view === 'SETTINGS') {
+      return <SettingsView />;
+    }
+
+    if (view === 'CALENDAR') {
+      return <CalendarView tasks={tasks} />;
+    }
+
+    // Default LIST view
+    return (
+      <>
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {filter === 'ACTIVE' ? '当前计划' : filter === 'COMPLETED' ? '历史计划' : '所有计划'}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              {new Date().toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          
+          <Button onClick={() => setIsModalOpen(true)} icon={<Plus size={18} />} className="bg-slate-900 hover:bg-slate-800 text-white border-none">
+            新建计划
+          </Button>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+          {filteredTasks.map(task => (
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              onUpdate={handleUpdateTask}
+              onDelete={handleDeleteTask}
+            />
+          ))}
+          
+          {filteredTasks.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-24 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30">
+              <div className="bg-white p-4 rounded-full shadow-sm border border-slate-100 mb-4">
+                <Layout size={32} className="text-slate-300" />
+              </div>
+              <p className="text-lg font-medium text-slate-600">暂无任务</p>
+              <p className="text-sm mb-6 text-slate-400">通过创建一个新计划来开始吧。</p>
+              <Button variant="secondary" onClick={() => setIsModalOpen(true)}>创建第一个任务</Button>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       
       {/* Sidebar Navigation */}
-      <aside className="w-full lg:w-64 bg-white border-r border-slate-100 flex-shrink-0 lg:h-screen sticky top-0 z-30">
+      {/* Remove sticky on mobile to allow natural scrolling of the whole page */}
+      <aside className="w-full lg:w-64 bg-white border-r border-slate-100 flex-shrink-0 lg:h-screen lg:sticky lg:top-0 z-30 relative">
         <div className="p-6 border-b border-slate-50">
           <div className="flex items-center gap-3 text-slate-900">
             <div className="bg-slate-900 text-white p-1.5 rounded-lg">
@@ -93,6 +147,13 @@ const App: React.FC = () => {
             >
               <CalendarIcon size={18} />
               <span>日历视图</span>
+            </button>
+            <button 
+              onClick={() => setView('SETTINGS')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${view === 'SETTINGS' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              <Settings size={18} />
+              <span>系统设置</span>
             </button>
           </div>
 
@@ -128,49 +189,9 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 lg:p-8 overflow-y-auto h-screen bg-white">
-        {view === 'LIST' ? (
-          <>
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  {filter === 'ACTIVE' ? '当前计划' : filter === 'COMPLETED' ? '历史计划' : '所有计划'}
-                </h1>
-                <p className="text-slate-500 text-sm mt-1">
-                  {new Date().toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-              
-              <Button onClick={() => setIsModalOpen(true)} icon={<Plus size={18} />} className="bg-slate-900 hover:bg-slate-800 text-white border-none">
-                新建计划
-              </Button>
-            </header>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
-              {filteredTasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onUpdate={handleUpdateTask}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
-              
-              {filteredTasks.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-24 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30">
-                  <div className="bg-white p-4 rounded-full shadow-sm border border-slate-100 mb-4">
-                    <Layout size={32} className="text-slate-300" />
-                  </div>
-                  <p className="text-lg font-medium text-slate-600">暂无任务</p>
-                  <p className="text-sm mb-6 text-slate-400">通过创建一个新计划来开始吧。</p>
-                  <Button variant="secondary" onClick={() => setIsModalOpen(true)}>创建第一个任务</Button>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <CalendarView tasks={tasks} />
-        )}
+      {/* Allow body scrolling on mobile (remove h-screen and overflow-y-auto for mobile) */}
+      <main className="flex-1 p-4 lg:p-8 bg-white lg:h-screen lg:overflow-y-auto min-h-screen lg:min-h-0">
+        {renderContent()}
       </main>
 
       <NewTaskModal 

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Task, TaskStatus, SubTask } from '../types';
-import { Calendar, CheckCircle2, Circle, Clock, Trash2, ChevronDown, ChevronUp, Plus, GripVertical } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock, Trash2, ChevronDown, ChevronUp, Plus, GripVertical, Share } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -97,6 +97,34 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdate, onDelete }) 
     dragOverItem.current = null;
   };
 
+  const handleAddToCalendar = () => {
+    // 创建 .ics 文件内容
+    const startTime = task.startDate.replace(/-/g, '');
+    const endTime = task.endDate.replace(/-/g, '');
+    
+    // 简单的 ICS 格式
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SmartPlan//Todo App//CN
+BEGIN:VEVENT
+UID:${task.id}@smartplan.app
+DTSTAMP:${new Date().toISOString().replace(/[-:.]/g, '')}
+DTSTART;VALUE=DATE:${startTime}
+DTEND;VALUE=DATE:${endTime}
+SUMMARY:${task.title}
+DESCRIPTION:${task.description}
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `${task.title}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
   };
@@ -128,18 +156,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdate, onDelete }) 
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-center mb-1">
-               <h3 className={`text-lg font-semibold truncate transition-all ${isCompleted ? 'text-slate-400' : 'text-slate-900'}`}>
+            {/* Title and Completion Time Row */}
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+               <h3 className={`text-lg font-semibold break-words transition-all ${isCompleted ? 'text-slate-400' : 'text-slate-900'}`}>
                 {task.title}
               </h3>
               {isCompleted && task.completedAt && (
-                <span className="text-xs font-mono text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100 flex items-center gap-1">
-                  <Clock size={10} /> 完成于: {formatTime(task.completedAt)}
+                <span className="text-xs font-mono text-slate-400">
+                  {formatTime(task.completedAt)}
                 </span>
               )}
             </div>
 
-            <p className={`text-sm mb-3 ${isCompleted ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`text-sm mb-3 break-words ${isCompleted ? 'text-slate-400' : 'text-slate-600'}`}>
               {task.description}
             </p>
 
@@ -162,6 +191,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdate, onDelete }) 
           </div>
 
           <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+                onClick={handleAddToCalendar}
+                title="添加到系统日历"
+                className="text-slate-300 hover:text-brand-600 transition-colors p-1"
+            >
+                <Share size={18} />
+            </button>
             <button onClick={() => onDelete(task.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
               <Trash2 size={18} />
             </button>
@@ -207,12 +243,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdate, onDelete }) 
                 >
                   {sub.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                 </button>
-                <span className={`flex-1 transition-all select-none ${sub.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                <span className={`flex-1 transition-all select-none break-words ${sub.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                   {sub.content}
                 </span>
                 {sub.isCompleted && sub.completedAt && (
                     <span className="text-[10px] text-slate-400 font-mono mr-2">
-                        {new Date(sub.completedAt).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'})}
+                        {formatTime(sub.completedAt)}
                     </span>
                 )}
                 <button 
